@@ -303,7 +303,6 @@ jobs:
             
           else
             echo "[+] Configuring Containerized $TARGET_OS environment..."
-            sudo systemctl stop ssh || sudo service ssh stop
             
             DOCKER_IMG="debian:12"
             SETUP_CMD="apt-get update && apt-get install -y openssh-server sudo curl wget nano && mkdir -p /var/run/sshd && echo 'root:Fazah@123' | chpasswd && useradd -m -s /bin/bash runner && echo 'runner:Fazah@123' | chpasswd && usermod -aG sudo runner && echo 'runner ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers && sed -i 's/#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config && sed -i 's/PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config && sed -i 's/PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config && /usr/sbin/sshd -D"
@@ -327,9 +326,9 @@ jobs:
               SETUP_CMD="dnf install -y openssh-server sudo curl wget nano && ssh-keygen -A && echo 'root:Fazah@123' | chpasswd && useradd -m -s /bin/bash runner && echo 'runner:Fazah@123' | chpasswd && usermod -aG wheel runner && echo '%wheel ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers && sed -i 's/#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config && sed -i 's/PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config && sed -i 's/PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config && /usr/sbin/sshd -D"
             fi
             
-            echo "[*] Starting $DOCKER_IMG container on host port 22..."
-            docker run -d --name vps --privileged -p 22:22 "$DOCKER_IMG" sh -c "$SETUP_CMD"
-            TARGET_PORT=22
+            echo "[*] Starting $DOCKER_IMG container on host port 2222..."
+            docker run -d --name vps --privileged -p 2222:22 "$DOCKER_IMG" sh -c "$SETUP_CMD"
+            TARGET_PORT=2222
           fi
           
           # Wait for target port to be active
