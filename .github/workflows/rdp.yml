@@ -349,7 +349,7 @@ jobs:
           port="${{ env.TARGET_PORT }}"
           if [ -z "$port" ]; then port=22; fi
           echo "[*] Starting Ngrok TCP tunnel for port $port on region $reg..."
-          ngrok tcp "$port" --region "$reg" --log=stdout > /dev/null &
+          nohup ngrok tcp "$port" --region "$reg" --log=stdout > /tmp/ngrok.log 2>&1 & disown
           sleep 3
           tunnel_url=""
           for i in {1..25}; do
@@ -374,21 +374,21 @@ jobs:
           user_name="runner"
           if [[ "${{ inputs.windows_version }}" =~ ^windows ]]; then user_name="Fazah"; fi
           
-          cat << EOF > rdp-connection.rdp
-full address:s:$url
-username:s:$user_name
-prompt for credentials:i:1
-administrative session:i:1
-authentication level:i:0
-enablecredsspsupport:i:0
-autoreconnection enabled:i:1
-smart sizing:i:1
-screen mode id:i:2
-desktopwidth:i:1920
-desktopheight:i:1080
-redirectclipboard:i:1
-$url
-EOF
+          {
+            echo "full address:s:$url"
+            echo "username:s:$user_name"
+            echo "prompt for credentials:i:1"
+            echo "administrative session:i:1"
+            echo "authentication level:i:0"
+            echo "enablecredsspsupport:i:0"
+            echo "autoreconnection enabled:i:1"
+            echo "smart sizing:i:1"
+            echo "screen mode id:i:2"
+            echo "desktopwidth:i:1920"
+            echo "desktopheight:i:1080"
+            echo "redirectclipboard:i:1"
+            echo "$url"
+          } > rdp-connection.rdp
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
@@ -400,6 +400,14 @@ EOF
       - name: Keep Alive Session
         run: |
           echo "[+] Server session is live (${{ steps.ngrok-tunnel.outputs.tunnel_url }})! Keeping session active..."
+          reg="${{ inputs.ngrok_region }}"
+          if [ -z "$reg" ] || [ "$reg" = "gb" ]; then reg="eu"; fi
+          port="${{ env.TARGET_PORT }}"
+          if [ -z "$port" ]; then port=22; fi
           while true; do
-            sleep 120
+            if ! pgrep -x "ngrok" > /dev/null; then
+              echo "[!] Ngrok stopped. Restarting tunnel..."
+              nohup ngrok tcp "$port" --region "$reg" --log=stdout > /tmp/ngrok.log 2>&1 & disown
+            fi
+            sleep 60
           done
